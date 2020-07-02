@@ -63,6 +63,7 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Web.Entity" />
     <Reference Include="System.Web.ApplicationServices" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -174,7 +175,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Types\ConverterData.cs" />
     <Compile Include="Types\DicomConverterService.cs" />
+    <Compile Include="Types\ItemToZip.cs" />
     <Compile Include="Types\ResponseContent.cs" />
+    <Compile Include="Types\ZippingService.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Areas\HelpPage\HelpPage.css" />

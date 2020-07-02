@@ -13,7 +13,7 @@ namespace DicomConverter.Types
     {
         public ResponseContent Convert ( ConverterData data)
         {
-            List<string> convertedDcm = new List<string>();
+            List<ConvertedFileInfo> convertedDcm = new List<ConvertedFileInfo>();
             ResponseContent responseContent = new ResponseContent ( );
 
             if (data.Files.Count == 0)
@@ -27,8 +27,6 @@ namespace DicomConverter.Types
             {
                 case KnownFormats.JSON:
                 {
-                    string fileName = "";
-
                     foreach (var file in data.Files)
                     {
                         var converter = new JsonDicomConverter();
@@ -36,15 +34,30 @@ namespace DicomConverter.Types
 
                         converter.WriteInlineBinary = true;
 
-                        convertedDcm.Add(converter.Convert(dcmFile.Dataset));
-
-                        fileName = file.FileName;
+                        convertedDcm.Add(new ConvertedFileInfo( ) 
+                        { 
+                            FileName = Path.ChangeExtension(file.FileName, KnownFormats.JSON),
+                            Data = Encoding.UTF8.GetBytes(converter.Convert(dcmFile.Dataset))
+                        });
                     }
+                }
+                break;
 
-                    responseContent.FileName = Path.ChangeExtension(fileName, KnownFormats.JSON);
-                    responseContent.Content = new StringContent("[" + string.Join(",", convertedDcm) + "]", Encoding.UTF8, "application/json");
+                case KnownFormats.XML:
+                {
+                    foreach (var file in data.Files)
+                    {
+                        var converter = new XmlDicomConverter();
+                        var dcmFile = Dicom.DicomFile.Open(new MemoryStream(file.Data));
 
-                    responseContent.Status = System.Net.HttpStatusCode.OK;
+                        converter.WriteInlineBinary = true;
+
+                        convertedDcm.Add(new ConvertedFileInfo( ) 
+                        { 
+                            FileName = Path.ChangeExtension(file.FileName, KnownFormats.XML),
+                            Data = Encoding.UTF8.GetBytes(converter.Convert(dcmFile.Dataset))
+                        });
+                    }
                 }
                 break;
 
@@ -55,6 +68,9 @@ namespace DicomConverter.Types
                 break;
             }
 
+            responseContent.FileName = Path.ChangeExtension(convertedDcm.First().FileName, "zip");
+            responseContent.Content = new ByteArrayContent(ZippingService.CreateZipData(convertedDcm));
+            responseContent.Status = System.Net.HttpStatusCode.OK;
             return responseContent;
         }
     }

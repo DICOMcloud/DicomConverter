@@ -56,7 +56,7 @@ namespace DicomConverter.Controllers
                         continue;
                     }
 
-                    converterData.Files.Add ( new DicomFileInfo (){  Data = buffer, FileName = filename});
+                    converterData.Files.Add ( new ConvertedFileInfo (){  Data = buffer, FileName = filename});
                 }
                 else 
                 { 
