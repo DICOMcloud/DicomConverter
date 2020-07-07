@@ -1,4 +1,6 @@
 ﻿using DICOMcloud;
+using DICOMcloud.IO;
+using DICOMcloud.Media;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -61,6 +63,32 @@ namespace DicomConverter.Types
                 }
                 break;
 
+                case KnownFormats.JPG:
+                { 
+                    foreach (var file in data.Files)
+                    {
+                        FileStorageService storageService = new FileStorageService (Path.GetTempPath());
+                        DicomMediaIdFactory mediaIdFactory = new DicomMediaIdFactory ();
+                        JpegMediaWriter writers = new JpegMediaWriter (storageService, mediaIdFactory);
+                        var dcmFile = Dicom.DicomFile.Open(new MemoryStream(file.Data));
+                        var locations = writers.CreateMedia(new DicomMediaWriterParameters(){  Dataset = dcmFile.Dataset, 
+                            MediaInfo = new DicomMediaProperties() { MediaType = writers .MediaType}});
+                        int count  = 1;
+                        foreach (var location in locations)
+                        {
+                            var fileName = locations.Count > 1 ? Path.ChangeExtension((Path.GetFileNameWithoutExtension (file.FileName) + count++), KnownFormats.JPG): 
+                                            Path.ChangeExtension(file.FileName, KnownFormats.JPG);
+                            using ( var stream = location.Download())
+                            {
+                                convertedDcm.Add ( new ConvertedFileInfo ( ) { Data = stream.ReadAllBytes(), FileName = fileName});
+                            }
+
+                            location.Delete();
+                        }
+                    }
+                }
+                break;
+
                 default:
                 {
                     responseContent.Status = System.Net.HttpStatusCode.UnsupportedMediaType;
@@ -80,5 +108,20 @@ namespace DicomConverter.Types
         public const string JSON = "json";
         public const string XML = "xml";
         public const string JPG = "jpg";
+    }
+
+    public static class StreamExtensions
+    {
+        public static byte[] ReadAllBytes(this Stream instream)
+        {
+            if (instream is MemoryStream)
+                return ((MemoryStream)instream).ToArray();
+
+            using (var memoryStream = new MemoryStream())
+            {
+                instream.CopyTo(memoryStream);
+                return memoryStream.ToArray();
+            }
+        }
     }
 }
